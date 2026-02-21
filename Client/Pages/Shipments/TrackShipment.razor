@@ -1,0 +1,152 @@
+@page "/track"
+@page "/track/{TrackingNumber}"
+@using LogiCore.Server.Models.Shipments
+@using LogiCore.Client.Services.Shipments
+
+
+<PageTitle>Track Shipment — LogiCore</PageTitle>
+
+<RadzenRow JustifyContent="JustifyContent.Center">
+    <RadzenColumn Size="12" SizeMD="8">
+        <RadzenText Text="Track Your Shipment" TextStyle="TextStyle.H4" TagName="TagName.H1" class="rz-mb-1" />
+        <RadzenText Text="Enter a tracking number to get real-time status updates." TextStyle="TextStyle.Body1" class="rz-mb-4" />
+
+        <RadzenCard class="rz-mb-4">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.End">
+                <div style="flex:1">
+                    <RadzenLabel Text="Tracking Number" />
+                    <RadzenTextBox @bind-Value="inputTracking" Placeholder="e.g. LC20260201ABCD1234"
+                                   Style="width:100%;font-family:monospace" @onkeydown="@OnKeyDown" />
+                </div>
+                <RadzenButton Text="Track" Icon="search" ButtonStyle="ButtonStyle.Primary"
+                              Click="@DoTrackShipment" IsBusy="@isSearching" BusyText="Searching…" />
+            </RadzenStack>
+        </RadzenCard>
+
+        @if (notFound)
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Warning" Title="Not Found"
+                         Text="@($"No shipment found for tracking number '{inputTracking}'. Please check and try again.")" />
+        }
+
+        @if (shipment != null)
+        {
+            <!-- Result card -->
+            <RadzenCard class="rz-mb-3">
+                <RadzenRow AlignItems="AlignItems.Center" class="rz-mb-3">
+                    <RadzenColumn Size="8">
+                        <RadzenText Text="@shipment.TrackingNumber" TextStyle="TextStyle.H6"
+                                    Style="font-family:monospace" class="rz-mb-1" />
+                        <RadzenBadge Text="@GetStatusLabel(shipment.Status)" BadgeStyle="@GetStatusBadge(shipment.Status)" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="4" Style="text-align:right">
+                        <RadzenText Text="@($"Est. Delivery: {shipment.EstimatedDelivery?.ToString("MM/dd/yyyy") ?? "—"}")"
+                                    TextStyle="TextStyle.Body2" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <!-- Route summary -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-mb-4"
+                             Style="background:var(--rz-base-100);border-radius:8px;padding:12px">
+                    <RadzenIcon Icon="location_on" Style="color:var(--rz-primary)" />
+                    <div>
+                        <RadzenText Text="@($"{shipment.OriginCity}, {shipment.OriginState}")" TextStyle="TextStyle.Subtitle2" class="rz-mb-0" />
+                        <RadzenText Text="Origin" TextStyle="TextStyle.Caption" />
+                    </div>
+                    <RadzenIcon Icon="arrow_forward" Style="color:var(--rz-text-secondary-color);flex:1;text-align:center" />
+                    <div style="text-align:right">
+                        <RadzenText Text="@($"{shipment.DestinationCity}, {shipment.DestinationState}")" TextStyle="TextStyle.Subtitle2" class="rz-mb-0" />
+                        <RadzenText Text="Destination" TextStyle="TextStyle.Caption" />
+                    </div>
+                    <RadzenIcon Icon="flag" Style="color:var(--rz-success)" />
+                </RadzenStack>
+
+                <!-- Shipment info chips -->
+                <RadzenRow Gap="0.5rem" class="rz-mb-4">
+                    <RadzenColumn Size="6" SizeMD="3">
+                        <div class="info-chip">
+                            <span class="label">Service</span>
+                            <span class="value">@shipment.ServiceType</span>
+                        </div>
+                    </RadzenColumn>
+                    <RadzenColumn Size="6" SizeMD="3">
+                        <div class="info-chip">
+                            <span class="label">Weight</span>
+                            <span class="value">@shipment.TotalWeight lbs</span>
+                        </div>
+                    </RadzenColumn>
+                    <RadzenColumn Size="6" SizeMD="3">
+                        <div class="info-chip">
+                            <span class="label">Packages</span>
+                            <span class="value">@shipment.PackageCount</span>
+                        </div>
+                    </RadzenColumn>
+                    @if (shipment.ActualDelivery.HasValue)
+                    {
+                        <RadzenColumn Size="6" SizeMD="3">
+                            <div class="info-chip">
+                                <span class="label">Delivered</span>
+                                <span class="value">@shipment.ActualDelivery.Value.ToString("MM/dd")</span>
+                            </div>
+                        </RadzenColumn>
+                    }
+                </RadzenRow>
+            </RadzenCard>
+
+            <!-- Timeline -->
+            <RadzenCard>
+                <RadzenText Text="Tracking History" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                @if (!shipment.Events.Any())
+                {
+                    <RadzenText Text="No tracking events yet." TextStyle="TextStyle.Body2" />
+                }
+                else
+                {
+                    <div class="timeline">
+                        @foreach (var ev in shipment.Events)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-dot @GetEventDotClass(ev.EventType)"></div>
+                                <div class="timeline-content">
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start">
+                                        <div>
+                                            <RadzenText Text="@FormatEventType(ev.EventType)" TextStyle="TextStyle.Subtitle2" class="rz-mb-0" />
+                                            @if (!string.IsNullOrEmpty(ev.Location))
+                                            {
+                                                <RadzenText Text="@ev.Location" TextStyle="TextStyle.Body2" class="rz-mb-0" />
+                                            }
+                                            @if (!string.IsNullOrEmpty(ev.Notes))
+                                            {
+                                                <RadzenText Text="@ev.Notes" TextStyle="TextStyle.Caption"
+                                                            Style="color:var(--rz-text-secondary-color)" class="rz-mb-0" />
+                                            }
+                                        </div>
+                                        <RadzenText Text="@ev.Timestamp.ToLocalTime().ToString("MM/dd HH:mm")"
+                                                    TextStyle="TextStyle.Caption" Style="color:var(--rz-text-secondary-color);white-space:nowrap" />
+                                    </RadzenStack>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </RadzenCard>
+        }
+    </RadzenColumn>
+</RadzenRow>
+
+<style>
+    .info-chip { background: var(--rz-base-100); border-radius: 6px; padding: 8px 12px; }
+    .info-chip .label { display: block; font-size: 0.7rem; color: var(--rz-text-secondary-color); text-transform: uppercase; letter-spacing: 0.05em; }
+    .info-chip .value { font-weight: 600; font-size: 0.9rem; }
+    .timeline { display: flex; flex-direction: column; }
+    .timeline-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+    .timeline-item:not(:last-child)::before { content: ''; position: absolute; left: 6px; top: 14px; bottom: 0; width: 2px; background: var(--rz-base-200); }
+    .timeline-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .timeline-dot.success { background: var(--rz-success); }
+    .timeline-dot.primary { background: var(--rz-primary); }
+    .timeline-dot.warning { background: var(--rz-warning); }
+    .timeline-dot.danger { background: var(--rz-danger); }
+    .timeline-dot.info { background: var(--rz-info); }
+    .timeline-dot.secondary { background: var(--rz-base-400); }
+    .timeline-content { flex: 1; }
+</style>

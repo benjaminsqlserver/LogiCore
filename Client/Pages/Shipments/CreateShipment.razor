@@ -1,0 +1,183 @@
+@page "/shipments/create"
+@page "/shipments/{ShipmentId:int}/edit"
+@using LogiCore.Server.Models.Shipments
+@using LogiCore.Client.Services.Shipments
+
+
+<PageTitle>@(IsEditMode ? "Edit Shipment" : "New Shipment") — LogiCore</PageTitle>
+
+<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-mb-4">
+    <RadzenButton Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Click="@GoBack" />
+    <RadzenText Text="@(IsEditMode ? $"Edit Shipment — {editingTrackingNumber}" : "Create New Shipment")"
+                TextStyle="TextStyle.H4" TagName="TagName.H1" />
+</RadzenStack>
+
+@if (isLoading)
+{
+    <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large"
+                               Style="display:block;margin:80px auto" />
+}
+else
+{
+    <RadzenTemplateForm TItem="CreateShipmentDto" Data="@model" Submit="@OnSubmit" InvalidSubmit="@OnInvalidSubmit">
+        <RadzenRow Gap="1.5rem">
+            <!-- Sender Info -->
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard>
+                    <RadzenText Text="Sender Information" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenRow Gap="0.75rem">
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Full Name *" />
+                            <RadzenTextBox @bind-Value="model.SenderName" Name="SenderName" Style="width:100%" />
+                            <RadzenRequiredValidator Component="SenderName" Text="Sender name is required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Email" />
+                            <RadzenTextBox @bind-Value="model.SenderEmail" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Phone" />
+                            <RadzenTextBox @bind-Value="model.SenderPhone" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Street Address *" />
+                            <RadzenTextBox @bind-Value="model.OriginAddress" Name="OriginAddress" Style="width:100%" />
+                            <RadzenRequiredValidator Component="OriginAddress" Text="Origin address is required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenLabel Text="City *" />
+                            <RadzenTextBox @bind-Value="model.OriginCity" Name="OriginCity" Style="width:100%" />
+                            <RadzenRequiredValidator Component="OriginCity" Text="City is required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenLabel Text="State" />
+                            <RadzenTextBox @bind-Value="model.OriginState" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenLabel Text="ZIP *" />
+                            <RadzenTextBox @bind-Value="model.OriginPostalCode" Name="OriginZip" Style="width:100%" />
+                            <RadzenRequiredValidator Component="OriginZip" Text="Required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenLabel Text="Country" />
+                            <RadzenTextBox @bind-Value="model.OriginCountry" Style="width:100%" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenColumn>
+
+            <!-- Recipient Info -->
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard>
+                    <RadzenText Text="Recipient Information" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenRow Gap="0.75rem">
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Full Name *" />
+                            <RadzenTextBox @bind-Value="model.RecipientName" Name="RecipientName" Style="width:100%" />
+                            <RadzenRequiredValidator Component="RecipientName" Text="Recipient name is required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Email" />
+                            <RadzenTextBox @bind-Value="model.RecipientEmail" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Phone" />
+                            <RadzenTextBox @bind-Value="model.RecipientPhone" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Street Address *" />
+                            <RadzenTextBox @bind-Value="model.DestinationAddress" Name="DestAddress" Style="width:100%" />
+                            <RadzenRequiredValidator Component="DestAddress" Text="Destination address is required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenLabel Text="City *" />
+                            <RadzenTextBox @bind-Value="model.DestinationCity" Name="DestCity" Style="width:100%" />
+                            <RadzenRequiredValidator Component="DestCity" Text="City is required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenLabel Text="State" />
+                            <RadzenTextBox @bind-Value="model.DestinationState" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenLabel Text="ZIP *" />
+                            <RadzenTextBox @bind-Value="model.DestinationPostalCode" Name="DestZip" Style="width:100%" />
+                            <RadzenRequiredValidator Component="DestZip" Text="Required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenLabel Text="Country" />
+                            <RadzenTextBox @bind-Value="model.DestinationCountry" Style="width:100%" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenColumn>
+
+            <!-- Shipment Details -->
+            <RadzenColumn Size="12">
+                <RadzenCard>
+                    <RadzenText Text="Shipment Details" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenRow Gap="0.75rem">
+                        <RadzenColumn Size="12" SizeMD="3">
+                            <RadzenLabel Text="Service Type *" />
+                            <RadzenDropDown @bind-Value="model.ServiceType" Data="@serviceTypes"
+                                            TextProperty="Label" ValueProperty="Value" Style="width:100%"
+                                            Change="@(async (object val) => await RecalculateCost(val))" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6" SizeMD="2">
+                            <RadzenLabel Text="Weight (lbs) *" />
+                            <RadzenNumeric @bind-Value="model.TotalWeight" Name="Weight" Min="0.01m" Max="10000m"
+                                           Style="width:100%" Change="@(async (decimal val) => await RecalculateCostNumeric(val))" />
+                            <RadzenRequiredValidator Component="Weight" Text="Required" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6" SizeMD="2">
+                            <RadzenLabel Text="Packages" />
+                            <RadzenNumeric @bind-Value="model.PackageCount" Min="1" Max="999" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6" SizeMD="2">
+                            <RadzenLabel Text="Declared Value ($)" />
+                            <RadzenNumeric @bind-Value="model.DeclaredValue" Min="0m" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="6" SizeMD="3">
+                            <RadzenLabel Text="Pickup Date *" />
+                            <RadzenDatePicker @bind-Value="model.PickupDate" DateFormat="MM/dd/yyyy" Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" SizeMD="2">
+                            <RadzenLabel Text="Length (in)" />
+                            <RadzenNumeric @bind-Value="model.Length" Min="0m" Style="width:100%" Change="@(async (decimal val) => await RecalculateCostNumeric(val))" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" SizeMD="2">
+                            <RadzenLabel Text="Width (in)" />
+                            <RadzenNumeric @bind-Value="model.Width" Min="0m" Style="width:100%" Change="@(async (decimal val) => await RecalculateCostNumeric(val))" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" SizeMD="2">
+                            <RadzenLabel Text="Height (in)" />
+                            <RadzenNumeric @bind-Value="model.Height" Min="0m" Style="width:100%" Change="@(async (decimal val) => await RecalculateCostNumeric(val))" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Notes" />
+                            <RadzenTextArea @bind-Value="model.Notes" Rows="3" Style="width:100%" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <!-- Cost estimate -->
+                    @if (estimatedCost > 0)
+                    {
+                        <RadzenAlert AlertStyle="AlertStyle.Success" Shade="Shade.Lighter" class="rz-mt-3">
+                            <b>Estimated Shipping Cost: @estimatedCost.ToString("C")</b>
+                            &nbsp;·&nbsp; Est. Delivery: @estimatedDelivery.ToString("MM/dd/yyyy")
+                        </RadzenAlert>
+                    }
+                </RadzenCard>
+            </RadzenColumn>
+
+            <!-- Submit -->
+            <RadzenColumn Size="12">
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.75rem">
+                    <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@GoBack" />
+                    <RadzenButton Text="@(IsEditMode ? "Save Changes" : "Create Shipment")"
+                                  ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit"
+                                  IsBusy="@isSaving" BusyText="Saving…" />
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenTemplateForm>
+}

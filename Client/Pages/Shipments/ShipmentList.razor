@@ -1,0 +1,155 @@
+@page "/shipments"
+@using LogiCore.Server.Models.Shipments
+@using LogiCore.Client.Services.Shipments
+
+
+<PageTitle>Shipments — LogiCore</PageTitle>
+
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" class="rz-mb-4">
+    <RadzenText Text="Shipments" TextStyle="TextStyle.H4" TagName="TagName.H1" />
+    <RadzenButton Text="New Shipment" Icon="add_box" Click="@CreateNew" ButtonStyle="ButtonStyle.Primary" />
+</RadzenStack>
+
+<!-- Stats Bar -->
+@if (stats != null)
+{
+    <RadzenRow Gap="1rem" class="rz-mb-4">
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="local_shipping" Style="font-size:24px;color:var(--rz-primary)" />
+                <RadzenText Text="@stats.ActiveShipments.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Active" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="delivery_dining" Style="font-size:24px;color:#f59e0b" />
+                <RadzenText Text="@stats.OutForDelivery.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Out for Delivery" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="check_circle" Style="font-size:24px;color:#22c55e" />
+                <RadzenText Text="@stats.DeliveredToday.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Delivered Today" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="pending" Style="font-size:24px;color:#6b7280" />
+                <RadzenText Text="@stats.PendingPickup.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Pending Pickup" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="warning" Style="font-size:24px;color:#ef4444" />
+                <RadzenText Text="@stats.Failed.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Failed" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="speed" Style="font-size:24px;color:var(--rz-primary)" />
+                <RadzenText Text="@($"{stats.OnTimeRate}%")" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="On-Time Rate" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+}
+
+<!-- Filters -->
+<RadzenCard class="rz-mb-3">
+    <RadzenRow Gap="0.5rem" AlignItems="AlignItems.End">
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenLabel Text="Search" />
+            <RadzenTextBox @bind-Value="filter.SearchTerm" Placeholder="Tracking #, sender, recipient, city…" Style="width:100%" />
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenLabel Text="Status" />
+            <RadzenDropDown @bind-Value="filter.Status" Data="@statusOptions" TextProperty="Label" ValueProperty="Value"
+                            Placeholder="All statuses" AllowClear="true" Style="width:100%" />
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenLabel Text="Service" />
+            <RadzenDropDown @bind-Value="filter.ServiceType" Data="@serviceOptions" TextProperty="Label" ValueProperty="Value"
+                            Placeholder="All services" AllowClear="true" Style="width:100%" />
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenLabel Text="From" />
+            <RadzenDatePicker @bind-Value="filter.DateFrom" DateFormat="MM/dd/yyyy" Style="width:100%" />
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenLabel Text="To" />
+            <RadzenDatePicker @bind-Value="filter.DateTo" DateFormat="MM/dd/yyyy" Style="width:100%" />
+        </RadzenColumn>
+    </RadzenRow>
+    <RadzenRow class="rz-mt-3">
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+            <RadzenButton Text="Search" Icon="search" Click="@LoadShipments" ButtonStyle="ButtonStyle.Primary" />
+            <RadzenButton Text="Clear" Icon="clear" Click="@ClearFilters" ButtonStyle="ButtonStyle.Secondary" />
+        </RadzenStack>
+    </RadzenRow>
+</RadzenCard>
+
+<!-- Grid -->
+<RadzenCard>
+    <RadzenDataGrid Data="@shipments" TItem="ShipmentListDto" IsLoading="@isLoading"
+                    AllowPaging="true" PageSize="25" AllowSorting="true"
+                    AllowColumnResize="true" RowClick="@OnRowClick"
+                    EmptyText="No shipments found.">
+        <Columns>
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="TrackingNumber" Title="Tracking #" Width="180px">
+                <Template Context="s">
+                    <RadzenLink Text="@s.TrackingNumber" Path="@($"/shipments/{s.ShipmentId}")"
+                                Style="font-family:monospace;font-weight:600" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="SenderName" Title="Sender" />
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="RecipientName" Title="Recipient" />
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="Origin" Title="Origin" />
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="Destination" Title="Destination" />
+
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="ServiceType" Title="Service" Width="130px">
+                <Template Context="s">
+                    <RadzenBadge Text="@s.ServiceType.ToString()" BadgeStyle="@GetServiceBadge(s.ServiceType)" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="Status" Title="Status" Width="155px">
+                <Template Context="s">
+                    <RadzenBadge Text="@GetStatusLabel(s.Status)" BadgeStyle="@GetStatusBadge(s.Status)" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="TotalWeight" Title="Weight" Width="90px">
+                <Template Context="s">
+                    <span>@s.TotalWeight lbs</span>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="ShippingCost" Title="Cost" Width="90px"
+                                  FormatString="{0:C}" />
+
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="EstimatedDelivery" Title="EDD" Width="115px"
+                                  FormatString="{0:MM/dd/yyyy}" />
+
+            <RadzenDataGridColumn TItem="ShipmentListDto" Title="Actions" Width="90px" Sortable="false">
+                <Template Context="s">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="4px">
+                        <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="@(() => ViewShipment(s.ShipmentId))" />
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="@(() => EditShipment(s.ShipmentId))" />
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+<style>
+    .stat-card { text-align: center; padding: 0.75rem; }
+</style>
