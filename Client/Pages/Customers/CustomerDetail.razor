@@ -1,0 +1,124 @@
+@page "/customers/{CustomerId:int}"
+@using LogiCore.Server.Models.Customers
+@using LogiCore.Client.Services.Customers
+
+<PageTitle>@(customer?.FullName ?? "Customer") — LogiCore</PageTitle>
+
+@if (isLoading)
+{
+    <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate"
+                               Size="ProgressBarCircularSize.Large"
+                               Style="display:block;margin:80px auto" />
+}
+else if (customer is null)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Customer not found.</RadzenAlert>
+}
+else
+{
+    <!-- Header -->
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween"
+                 AlignItems="AlignItems.Center" class="rz-mb-4">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+            <RadzenButton Icon="arrow_back" ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => NavigationManager.NavigateTo("/customers"))" />
+            <RadzenStack Gap="0">
+                <RadzenText Text="@customer.FullName" TextStyle="TextStyle.H4" TagName="TagName.H1"
+                            class="rz-mb-0" />
+                @if (!string.IsNullOrEmpty(customer.CompanyName))
+                {
+                    <RadzenText Text="@customer.CompanyName" TextStyle="TextStyle.Subtitle1"
+                                Style="color:var(--rz-text-secondary-color)" />
+                }
+            </RadzenStack>
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+            <RadzenBadge Text="@customer.Status.ToString()" BadgeStyle="@GetStatusBadge(customer.Status)"
+                         Style="font-size:0.9rem;padding:0.4rem 0.8rem" />
+            <RadzenButton Text="Edit" Icon="edit" ButtonStyle="ButtonStyle.Primary"
+                          Click="@(() => NavigationManager.NavigateTo($"/customers/{CustomerId}/edit"))" />
+            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger"
+                          Click="@ConfirmDelete" />
+        </RadzenStack>
+    </RadzenStack>
+
+    <RadzenRow Gap="1.5rem">
+
+        <!-- ── Contact & Account ────────────────────────────────────── -->
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText Text="Contact Information" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                <RadzenStack Gap="0.75rem">
+                    <DetailRow Label="Email" Value="@customer.Email" Icon="email" />
+                    <DetailRow Label="Phone" Value="@(string.IsNullOrEmpty(customer.Phone) ? "—" : customer.Phone)" Icon="phone" />
+                    <DetailRow Label="Account Type" Icon="badge">
+                        <RadzenBadge Text="@customer.AccountType.ToString()"
+                                     BadgeStyle="@GetAccountTypeBadge(customer.AccountType)" />
+                    </DetailRow>
+                    @if (!string.IsNullOrEmpty(customer.TaxId))
+                    {
+                        <DetailRow Label="Tax ID" Value="@customer.TaxId" Icon="receipt" />
+                    }
+                    <DetailRow Label="Member Since" Value="@customer.CreatedAt.ToString("MMMM d, yyyy")" Icon="calendar_today" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- ── Financial ───────────────────────────────────────────── -->
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText Text="Account & Financials" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                <RadzenStack Gap="0.75rem">
+                    <DetailRow Label="Credit Limit" Value="@customer.CreditLimit.ToString("C")" Icon="credit_card" />
+                    <DetailRow Label="Outstanding Balance" Value="@customer.CurrentBalance.ToString("C")" Icon="account_balance_wallet" />
+                    <DetailRow Label="Available Credit"
+                               Value="@((customer.CreditLimit - customer.CurrentBalance).ToString("C"))"
+                               Icon="savings" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- ── Address ─────────────────────────────────────────────── -->
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText Text="Primary Address" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                <RadzenStack Gap="0.25rem">
+                    <RadzenText Text="@customer.AddressLine1" />
+                    @if (!string.IsNullOrEmpty(customer.AddressLine2))
+                    {
+                        <RadzenText Text="@customer.AddressLine2" />
+                    }
+                    <RadzenText Text="@($"{customer.City}, {customer.State} {customer.PostalCode}")" />
+                    <RadzenText Text="@customer.Country" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- ── Notes ───────────────────────────────────────────────── -->
+        @if (!string.IsNullOrEmpty(customer.Notes))
+        {
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard>
+                    <RadzenText Text="Notes" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenText Text="@customer.Notes" />
+                </RadzenCard>
+            </RadzenColumn>
+        }
+
+    </RadzenRow>
+}
+
+@* Reusable detail row helper component (inline for simplicity) *@
+@code {
+    private RenderFragment DetailRow(string label, string? value = null,
+        string? icon = null, RenderFragment? childContent = null) =>
+        @<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+            @if (icon != null) { <RadzenIcon Icon="@icon" Style="color:var(--rz-text-secondary-color);font-size:18px;width:22px" /> }
+            <RadzenStack Gap="0" Style="flex:1">
+                <RadzenText Text="@label" TextStyle="TextStyle.Caption" Style="color:var(--rz-text-secondary-color)" />
+                @if (childContent != null) { @childContent }
+                else { <RadzenText Text="@(value ?? "—")" /> }
+            </RadzenStack>
+        </RadzenStack>;
+}

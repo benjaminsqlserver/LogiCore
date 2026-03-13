@@ -1,0 +1,147 @@
+@page "/customers/create"
+@page "/customers/{CustomerId:int}/edit"
+@using LogiCore.Server.Models.Customers
+@using LogiCore.Client.Services.Customers
+
+<PageTitle>@(IsEditMode ? "Edit Customer" : "New Customer") — LogiCore</PageTitle>
+
+<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-mb-4">
+    <RadzenButton Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Click="@GoBack" />
+    <RadzenText Text="@(IsEditMode ? $"Edit Customer — {editingName}" : "New Customer")"
+                TextStyle="TextStyle.H4" TagName="TagName.H1" />
+</RadzenStack>
+
+@if (isLoading)
+{
+    <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate"
+                               Size="ProgressBarCircularSize.Large"
+                               Style="display:block;margin:80px auto" />
+}
+else
+{
+    <RadzenTemplateForm TItem="CreateCustomerDto" Data="@model" Submit="@OnSubmit" InvalidSubmit="@OnInvalidSubmit">
+        <RadzenRow Gap="1.5rem">
+
+            <!-- ── Contact Information ─────────────────────────────────── -->
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard>
+                    <RadzenText Text="Contact Information" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenRow Gap="0.75rem">
+
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Full Name *" />
+                            <RadzenTextBox @bind-Value="model.FullName" Name="FullName" Style="width:100%" />
+                            <RadzenRequiredValidator Component="FullName" Text="Full name is required" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Email Address *" />
+                            <RadzenTextBox @bind-Value="model.Email" Name="Email" Style="width:100%" />
+                            <RadzenRequiredValidator Component="Email" Text="Email is required" />
+                            <RadzenEmailValidator Component="Email" Text="Enter a valid email address" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Phone" />
+                            <RadzenTextBox @bind-Value="model.Phone" Style="width:100%" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Account Type" />
+                            <RadzenDropDown @bind-Value="model.AccountType" Data="@accountTypeOptions"
+                                            TextProperty="Label" ValueProperty="Value" Style="width:100%" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Company Name" />
+                            <RadzenTextBox @bind-Value="model.CompanyName" Style="width:100%"
+                                           Placeholder="Leave blank for individual accounts" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Tax ID / EIN" />
+                            <RadzenTextBox @bind-Value="model.TaxId" Style="width:100%" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Status" />
+                            <RadzenDropDown @bind-Value="model.Status" Data="@statusOptions"
+                                            TextProperty="Label" ValueProperty="Value" Style="width:100%" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenLabel Text="Credit Limit ($)" />
+                            <RadzenNumeric @bind-Value="model.CreditLimit" Min="0" Max="1000000"
+                                           Format="C" Style="width:100%" />
+                        </RadzenColumn>
+
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenColumn>
+
+            <!-- ── Address ─────────────────────────────────────────────── -->
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard>
+                    <RadzenText Text="Primary Address" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenRow Gap="0.75rem">
+
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Street Address *" />
+                            <RadzenTextBox @bind-Value="model.AddressLine1" Name="AddressLine1" Style="width:100%" />
+                            <RadzenRequiredValidator Component="AddressLine1" Text="Address is required" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12">
+                            <RadzenLabel Text="Address Line 2" />
+                            <RadzenTextBox @bind-Value="model.AddressLine2" Style="width:100%"
+                                           Placeholder="Suite, floor, building…" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="6">
+                            <RadzenLabel Text="City *" />
+                            <RadzenTextBox @bind-Value="model.City" Name="City" Style="width:100%" />
+                            <RadzenRequiredValidator Component="City" Text="City is required" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="3">
+                            <RadzenLabel Text="State" />
+                            <RadzenTextBox @bind-Value="model.State" Style="width:100%" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="3">
+                            <RadzenLabel Text="ZIP *" />
+                            <RadzenTextBox @bind-Value="model.PostalCode" Name="PostalCode" Style="width:100%" />
+                            <RadzenRequiredValidator Component="PostalCode" Text="Required" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="6">
+                            <RadzenLabel Text="Country" />
+                            <RadzenTextBox @bind-Value="model.Country" Style="width:100%" />
+                        </RadzenColumn>
+
+                    </RadzenRow>
+                </RadzenCard>
+
+                <!-- Notes -->
+                <RadzenCard class="rz-mt-4">
+                    <RadzenText Text="Notes" TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenTextArea @bind-Value="model.Notes" Rows="4" Style="width:100%"
+                                    Placeholder="Internal notes about this customer…" />
+                </RadzenCard>
+            </RadzenColumn>
+
+        </RadzenRow>
+
+        <!-- Actions -->
+        <RadzenRow class="rz-mt-4">
+            <RadzenColumn Size="12">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem">
+                    <RadzenButton ButtonType="ButtonType.Submit" Text="@(IsEditMode ? "Save Changes" : "Create Customer")"
+                                  Icon="save" ButtonStyle="ButtonStyle.Primary" IsBusy="@isSaving" />
+                    <RadzenButton Text="Cancel" Icon="cancel" ButtonStyle="ButtonStyle.Light" Click="@GoBack" />
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+
+    </RadzenTemplateForm>
+}

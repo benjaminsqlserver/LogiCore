@@ -3,6 +3,7 @@ using Radzen;
 using LogiCore.Server.Components;
 using LogiCore.Server.Data;
 using LogiCore.Server.Services.Shipments;
+using LogiCore.Server.Services.Customers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,12 @@ builder.Services.AddRazorComponents()
     .AddHubOptions(o => o.MaximumReceiveMessageSize = 10 * 1024 * 1024)
     .AddInteractiveWebAssemblyComponents();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // ---- Radzen ----
 builder.Services.AddRadzenComponents();
@@ -30,6 +36,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // ---- Application Services ----
 builder.Services.AddScoped<IShipmentService, ShipmentService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 builder.Services.AddHttpClient();
 

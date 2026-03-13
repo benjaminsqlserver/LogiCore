@@ -1,0 +1,154 @@
+@page "/customers"
+@using LogiCore.Server.Models.Customers
+@using LogiCore.Client.Services.Customers
+
+<PageTitle>Customers — LogiCore</PageTitle>
+
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween"
+             AlignItems="AlignItems.Center" class="rz-mb-4">
+    <RadzenText Text="Customers" TextStyle="TextStyle.H4" TagName="TagName.H1" />
+    <RadzenButton Text="New Customer" Icon="person_add" Click="@CreateNew" ButtonStyle="ButtonStyle.Primary" />
+</RadzenStack>
+
+<!-- Stats Bar -->
+@if (stats != null)
+{
+    <RadzenRow Gap="1rem" class="rz-mb-4">
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="people" Style="font-size:24px;color:var(--rz-primary)" />
+                <RadzenText Text="@stats.TotalCustomers.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Total" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="check_circle" Style="font-size:24px;color:#22c55e" />
+                <RadzenText Text="@stats.ActiveCustomers.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Active" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="business" Style="font-size:24px;color:#6366f1" />
+                <RadzenText Text="@stats.BusinessAccounts.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Business" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="domain" Style="font-size:24px;color:#f59e0b" />
+                <RadzenText Text="@stats.EnterpriseAccounts.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Enterprise" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="fiber_new" Style="font-size:24px;color:var(--rz-primary)" />
+                <RadzenText Text="@stats.NewThisMonth.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="New This Month" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenCard class="stat-card">
+                <RadzenIcon Icon="block" Style="font-size:24px;color:#ef4444" />
+                <RadzenText Text="@stats.SuspendedAccounts.ToString()" TextStyle="TextStyle.DisplayH6" class="rz-mt-1 rz-mb-0" />
+                <RadzenText Text="Suspended" TextStyle="TextStyle.Caption" />
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+}
+
+<!-- Filters -->
+<RadzenCard class="rz-mb-3">
+    <RadzenRow Gap="0.5rem" AlignItems="AlignItems.End">
+        <RadzenColumn Size="12" SizeMD="5">
+            <RadzenLabel Text="Search" />
+            <RadzenTextBox @bind-Value="filter.SearchTerm" Placeholder="Name, email, company, city…" Style="width:100%" />
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="3">
+            <RadzenLabel Text="Account Type" />
+            <RadzenDropDown @bind-Value="filter.AccountType" Data="@accountTypeOptions"
+                            TextProperty="Label" ValueProperty="Value"
+                            Placeholder="All types" AllowClear="true" Style="width:100%" />
+        </RadzenColumn>
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenLabel Text="Status" />
+            <RadzenDropDown @bind-Value="filter.Status" Data="@statusOptions"
+                            TextProperty="Label" ValueProperty="Value"
+                            Placeholder="All statuses" AllowClear="true" Style="width:100%" />
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="2">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                <RadzenButton Text="Search" Icon="search" Click="@LoadCustomers" ButtonStyle="ButtonStyle.Primary" />
+                <RadzenButton Text="Clear" Icon="clear" Click="@ClearFilters" ButtonStyle="ButtonStyle.Secondary" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenCard>
+
+<!-- Grid -->
+<RadzenCard>
+    <RadzenDataGrid Data="@customers" TItem="CustomerListDto" IsLoading="@isLoading"
+                    AllowPaging="true" PageSize="25" AllowSorting="true"
+                    AllowColumnResize="true" RowClick="@OnRowClick"
+                    EmptyText="No customers found.">
+        <Columns>
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="FullName" Title="Name" MinWidth="160px">
+                <Template Context="c">
+                    <RadzenStack Orientation="Orientation.Vertical" Gap="0">
+                        <RadzenLink Text="@c.FullName" Path="@($"/customers/{c.CustomerId}")"
+                                    Style="font-weight:600" />
+                        @if (!string.IsNullOrEmpty(c.CompanyName))
+                        {
+                            <RadzenText Text="@c.CompanyName" TextStyle="TextStyle.Caption"
+                                        Style="color:var(--rz-text-secondary-color)" />
+                        }
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="Phone" Title="Phone" Width="130px" />
+
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="AccountType" Title="Type" Width="120px">
+                <Template Context="c">
+                    <RadzenBadge Text="@c.AccountType.ToString()" BadgeStyle="@GetAccountTypeBadge(c.AccountType)" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="Status" Title="Status" Width="110px">
+                <Template Context="c">
+                    <RadzenBadge Text="@c.Status.ToString()" BadgeStyle="@GetStatusBadge(c.Status)" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="City" Title="Location" Width="150px">
+                <Template Context="c">
+                    <span>@c.City@(string.IsNullOrEmpty(c.State) ? "" : $", {c.State}")</span>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="CreditLimit" Title="Credit Limit"
+                                  Width="120px" FormatString="{0:C}" />
+
+            <RadzenDataGridColumn TItem="CustomerListDto" Property="CreatedAt" Title="Member Since"
+                                  Width="120px" FormatString="{0:MM/dd/yyyy}" />
+
+            <RadzenDataGridColumn TItem="CustomerListDto" Title="Actions" Width="90px" Sortable="false">
+                <Template Context="c">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="4px">
+                        <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="@(() => ViewCustomer(c.CustomerId))" />
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="@(() => EditCustomer(c.CustomerId))" />
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+<style>
+    .stat-card { text-align: center; padding: 0.75rem; }
+</style>
