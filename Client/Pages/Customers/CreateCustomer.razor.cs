@@ -78,6 +78,7 @@ namespace LogiCore.Client.Pages.Customers
             finally { isLoading = false; }
         }
 
+        //method to handle form submission for both create and edit modes
         private async Task OnSubmit()
         {
             isSaving = true;
