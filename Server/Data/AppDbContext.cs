@@ -1,10 +1,11 @@
+using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using LogiCore.Server.Models.Shipments;
 
 namespace LogiCore.Server.Data
 {
@@ -16,6 +17,9 @@ namespace LogiCore.Server.Data
         public DbSet<Shipment> Shipments => Set<Shipment>();
         public DbSet<Package> Packages => Set<Package>();
         public DbSet<ShipmentEvent> ShipmentEvents => Set<ShipmentEvent>();
+
+        // Customer Module
+        public DbSet<Customer> Customers => Set<Customer>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

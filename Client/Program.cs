@@ -4,6 +4,7 @@ using Radzen;
 
 using LogiCore.Client;
 using LogiCore.Client.Services.Shipments;
+using LogiCore.Client.Services.Customers;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -18,6 +19,9 @@ builder.Services.AddTransient(sp => new HttpClient { BaseAddress = new Uri(build
 
 // Register client-side shipment service (calls /api/shipments)
 builder.Services.AddScoped<IShipmentService, ShipmentHttpService>();
+
+// Register client-side customer service (calls /api/customers)
+builder.Services.AddScoped<ICustomerService, CustomerHttpService>();
 
 var host = builder.Build();
 await host.RunAsync();
