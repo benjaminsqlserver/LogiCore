@@ -108,6 +108,21 @@
             </RadzenDataGridColumn>
 
             <RadzenDataGridColumn TItem="ShipmentListDto" Property="SenderName" Title="Sender" />
+            <!-- Add after the "Sender" column, before "Recipient" -->
+            <RadzenDataGridColumn TItem="ShipmentListDto" Property="CustomerName"
+                                  Title="Account" Width="150px">
+                <Template Context="s">
+                    @if (s.CustomerId.HasValue)
+                    {
+                        <RadzenLink Text="@s.CustomerName"
+                                    Path="@($"/customers/{s.CustomerId}")" />
+                    }
+                    else
+                    {
+                        <span style="color:var(--rz-text-secondary-color)">—</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="ShipmentListDto" Property="RecipientName" Title="Recipient" />
             <RadzenDataGridColumn TItem="ShipmentListDto" Property="Origin" Title="Origin" />
             <RadzenDataGridColumn TItem="ShipmentListDto" Property="Destination" Title="Destination" />

@@ -1,10 +1,11 @@
-﻿using System;
+﻿using LogiCore.Server.Data;
+using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using LogiCore.Server.Data;
-using LogiCore.Server.Models.Customers;
 
 namespace LogiCore.Server.Services.Customers
 {
@@ -22,6 +23,14 @@ namespace LogiCore.Server.Services.Customers
         //  Query
         // ----------------------------------------------------------------
 
+        // GetCustomersAsync — replace the projection's ShipmentCount line:
+        // BEFORE:
+        // ShipmentCount = 0,
+
+        // AFTER — join to Shipments using a subquery:
+        // First, change the query to use a join instead of pure projection.
+        // Replace the entire GetCustomersAsync method body:
+
         public async Task<List<CustomerListDto>> GetCustomersAsync(CustomerFilterDto filter)
         {
             var q = _db.Customers.AsNoTracking().AsQueryable();
@@ -37,11 +46,8 @@ namespace LogiCore.Server.Services.Customers
                     c.Phone.ToLower().Contains(term));
             }
 
-            if (filter.AccountType.HasValue)
-                q = q.Where(c => c.AccountType == filter.AccountType.Value);
-
-            if (filter.Status.HasValue)
-                q = q.Where(c => c.Status == filter.Status.Value);
+            if (filter.AccountType.HasValue) q = q.Where(c => c.AccountType == filter.AccountType.Value);
+            if (filter.Status.HasValue) q = q.Where(c => c.Status == filter.Status.Value);
 
             return await q
                 .OrderByDescending(c => c.CreatedAt)
@@ -59,13 +65,11 @@ namespace LogiCore.Server.Services.Customers
                     City = c.City,
                     State = c.State,
                     Country = c.Country,
-                    // ShipmentCount will be wired up once Customers FK is added to Shipments
-                    ShipmentCount = 0,
+                    ShipmentCount = _db.Shipments.Count(s => s.CustomerId == c.CustomerId), // ← live count
                     CreatedAt = c.CreatedAt
                 })
                 .ToListAsync();
         }
-
         public async Task<int> GetCustomerCountAsync(CustomerFilterDto filter)
         {
             var q = _db.Customers.AsNoTracking().AsQueryable();
@@ -170,6 +174,33 @@ namespace LogiCore.Server.Services.Customers
             customer.IsDeleted = true;           // soft delete
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<ShipmentListDto>> GetCustomerShipmentsAsync(int customerId)
+        {
+            return await _db.Shipments
+                .AsNoTracking()
+                .Where(s => s.CustomerId == customerId)
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(20)   // last 20 — enough for the detail panel
+                .Select(s => new ShipmentListDto
+                {
+                    ShipmentId = s.ShipmentId,
+                    TrackingNumber = s.TrackingNumber,
+                    SenderName = s.SenderName,
+                    RecipientName = s.RecipientName,
+                    Origin = s.OriginCity + ", " + s.OriginState,
+                    Destination = s.DestinationCity + ", " + s.DestinationState,
+                    ServiceType = s.ServiceType,
+                    Status = s.Status,
+                    TotalWeight = s.TotalWeight,
+                    PackageCount = s.PackageCount,
+                    ShippingCost = s.ShippingCost,
+                    PickupDate = s.PickupDate,
+                    EstimatedDelivery = s.EstimatedDelivery,
+                    CreatedAt = s.CreatedAt
+                })
+                .ToListAsync();
         }
 
         // ----------------------------------------------------------------

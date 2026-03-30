@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using LogiCore.Server.Models.Customers;
 
 namespace LogiCore.Server.Services.Customers
 {
@@ -15,5 +16,8 @@ namespace LogiCore.Server.Services.Customers
         Task<bool> DeleteCustomerAsync(int customerId);
         Task<CustomerStatsDto> GetStatsAsync();
         Task<bool> EmailExistsAsync(string email, int? excludeCustomerId = null);
+
+        // ICustomerService.cs — add:
+        Task<List<ShipmentListDto>> GetCustomerShipmentsAsync(int customerId);
     }
 }

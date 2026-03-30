@@ -1,4 +1,6 @@
 ﻿#nullable enable
+using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -8,7 +10,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Web;
-using LogiCore.Server.Models.Customers;
 
 namespace LogiCore.Client.Services.Customers
 {
@@ -102,6 +103,13 @@ namespace LogiCore.Client.Services.Customers
             if (f.Status.HasValue) query["Status"] = f.Status.Value.ToString();
             var qs = query.ToString();
             return string.IsNullOrEmpty(qs) ? baseUrl : $"{baseUrl}?{qs}";
+        }
+
+        public async Task<List<ShipmentListDto>> GetCustomerShipmentsAsync(int customerId)
+        {
+            return await _http.GetFromJsonAsync<List<ShipmentListDto>>(
+                $"api/customers/{customerId}/shipments", _jsonOptions)
+                ?? new List<ShipmentListDto>();
         }
     }
 }

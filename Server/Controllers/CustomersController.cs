@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using LogiCore.Server.Models.Customers;
+﻿using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
 using LogiCore.Server.Services.Customers;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LogiCore.Server.Controllers
 {
@@ -73,6 +74,14 @@ namespace LogiCore.Server.Controllers
         {
             var ok = await _svc.DeleteCustomerAsync(id);
             return ok ? NoContent() : NotFound();
+        }
+
+        // GET api/customers/{id}/shipments
+        [HttpGet("{id:int}/shipments")]
+        public async Task<ActionResult<List<ShipmentListDto>>> GetShipments(int id)
+        {
+            var result = await _svc.GetCustomerShipmentsAsync(id);
+            return Ok(result);
         }
     }
 }

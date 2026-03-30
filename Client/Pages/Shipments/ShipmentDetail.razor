@@ -91,6 +91,22 @@ else
                         <RadzenText Text="Service" TextStyle="TextStyle.Overline" />
                         <RadzenBadge Text="@shipment.ServiceType.ToString()" BadgeStyle="@GetServiceBadge(shipment.ServiceType)" />
                     </RadzenColumn>
+
+                    <!-- Add inside the details RadzenRow, after the "Service" column -->
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenText Text="Account" TextStyle="TextStyle.Overline" />
+                        @if (shipment.CustomerId.HasValue)
+                        {
+                            <RadzenLink Text="@shipment.CustomerName"
+                                        Path="@($"/customers/{shipment.CustomerId}")"
+                                        Style="font-weight:500" />
+                        }
+                        else
+                        {
+                            <RadzenText Text="Walk-in / unlinked" TextStyle="TextStyle.Body1"
+                                        Style="color:var(--rz-text-secondary-color)" />
+                        }
+                    </RadzenColumn>
                     <RadzenColumn Size="6" SizeMD="4">
                         <RadzenText Text="Weight" TextStyle="TextStyle.Overline" />
                         <RadzenText Text="@($"{shipment.TotalWeight} lbs")" TextStyle="TextStyle.Body1" />

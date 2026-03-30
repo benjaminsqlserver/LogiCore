@@ -105,7 +105,74 @@ else
                 </RadzenCard>
             </RadzenColumn>
         }
+        <!-- Shipment History -->
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow JustifyContent="JustifyContent.SpaceBetween"
+                           AlignItems="AlignItems.Center" class="rz-mb-3">
+                    <RadzenText Text="Shipment History" TextStyle="TextStyle.Subtitle1" />
+                    <RadzenButton Text="New Shipment for this Account"
+                                  Icon="add_box" Size="ButtonSize.Small"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Click="@(() => NavigationManager.NavigateTo(
+                                                          $"/shipments/create?customerId={CustomerId}"))" />
+            </RadzenRow>
 
+            @if (shipments == null)
+                {
+                    <RadzenProgressBarCircular ShowValue="false"
+                                               Mode="ProgressBarMode.Indeterminate"
+                                               Size="ProgressBarCircularSize.Small"
+                                               Style="display:block;margin:20px auto" />
+                }
+                else if (!shipments.Any())
+                {
+                    <RadzenText Text="No shipments linked to this account yet."
+                                TextStyle="TextStyle.Body2"
+                                Style="color:var(--rz-text-secondary-color)" />
+                }
+                else
+                {
+                    <RadzenDataGrid Data="@shipments" TItem="ShipmentListDto"
+                                    AllowSorting="true" AllowPaging="true" PageSize="10"
+                                    RowClick="@(args => NavigationManager.NavigateTo(
+                                                              $"/shipments/{args.Data.ShipmentId}"))">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ShipmentListDto"
+                                          Property="TrackingNumber" Title="Tracking #" Width="180px">
+                        <Template Context="s">
+                            <RadzenLink Text="@s.TrackingNumber"
+                                        Path="@($"/shipments/{s.ShipmentId}")"
+                                        Style="font-family:monospace;font-weight:600" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ShipmentListDto"
+                                          Property="Destination" Title="Destination" />
+                    <RadzenDataGridColumn TItem="ShipmentListDto"
+                                          Property="ServiceType" Title="Service" Width="120px">
+                        <Template Context="s">
+                            <RadzenBadge Text="@s.ServiceType.ToString()"
+                                         BadgeStyle="@GetServiceBadge(s.ServiceType)" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ShipmentListDto"
+                                          Property="Status" Title="Status" Width="145px">
+                        <Template Context="s">
+                            <RadzenBadge Text="@GetStatusLabel(s.Status)"
+                                         BadgeStyle="@GetStatusBadge(s.Status)" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ShipmentListDto"
+                                          Property="ShippingCost" Title="Cost"
+                                          Width="90px" FormatString="{0:C}" />
+                    <RadzenDataGridColumn TItem="ShipmentListDto"
+                                          Property="CreatedAt" Title="Date"
+                                          Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                </Columns>
+            </RadzenDataGrid>
+                        }
+            </RadzenCard>
+        </RadzenColumn>
     </RadzenRow>
 }
 

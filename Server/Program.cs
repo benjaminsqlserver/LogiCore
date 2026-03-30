@@ -35,8 +35,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         sql => sql.EnableRetryOnFailure(maxRetryCount: 5)));
 
 // ---- Application Services ----
-builder.Services.AddScoped<IShipmentService, ShipmentService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<LogiCore.Server.Services.Shipments.IShipmentService, LogiCore.Server.Services.Shipments.ShipmentService>();
+builder.Services.AddScoped<LogiCore.Server.Services.Customers.ICustomerService, LogiCore.Server.Services.Customers.CustomerService>();
+// ---- Client-side services (needed for InteractiveAuto server prerender) ----
+builder.Services.AddScoped<LogiCore.Client.Services.Shipments.IShipmentService,
+                           LogiCore.Client.Services.Shipments.ShipmentHttpService>();
+builder.Services.AddScoped<LogiCore.Client.Services.Customers.ICustomerService,
+                           LogiCore.Client.Services.Customers.CustomerHttpService>();
 
 builder.Services.AddHttpClient();
 

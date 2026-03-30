@@ -21,6 +21,10 @@ namespace LogiCore.Server.Models.Shipments
         public DateTime PickupDate { get; set; }
         public DateTime? EstimatedDelivery { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        // ShipmentListDto — add:
+        public int? CustomerId { get; set; }
+        public string? CustomerName { get; set; }   // denormalised for grid display
     }
 
     public class ShipmentDetailDto
@@ -72,6 +76,12 @@ namespace LogiCore.Server.Models.Shipments
 
         public List<ShipmentEventDto> Events { get; set; } = new();
         public List<PackageDto> Packages { get; set; } = new();
+
+        // ShipmentDetailDto — add:
+        public int? CustomerId { get; set; }
+        public string? CustomerName { get; set; }
+        public string? CustomerEmail { get; set; }
+
     }
 
     public class CreateShipmentDto
@@ -116,6 +126,9 @@ namespace LogiCore.Server.Models.Shipments
 
         public DateTime PickupDate { get; set; } = DateTime.Today;
         public string? Notes { get; set; }
+
+        // CreateShipmentDto — add:
+        public int? CustomerId { get; set; }        // optional — link to existing account]
     }
 
     public class ShipmentEventDto

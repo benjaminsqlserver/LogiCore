@@ -66,7 +66,10 @@ namespace LogiCore.Server.Services.Shipments
                     ShippingCost      = s.ShippingCost,
                     PickupDate        = s.PickupDate,
                     EstimatedDelivery = s.EstimatedDelivery,
-                    CreatedAt         = s.CreatedAt
+                    CreatedAt         = s.CreatedAt,
+                    //Added for grid display:
+                    CustomerId = s.CustomerId,
+                    CustomerName = s.Customer != null ? s.Customer.FullName : null,
                 })
                 .ToListAsync();
         }
@@ -96,6 +99,8 @@ namespace LogiCore.Server.Services.Shipments
                 .AsNoTracking()
                 .Include(x => x.Events.OrderByDescending(e => e.Timestamp))
                 .Include(x => x.Packages)
+                 //Added include to load customer data for detail view:
+                 .Include(x => x.Customer)          // ← new
                 .FirstOrDefaultAsync(x => x.ShipmentId == shipmentId);
 
             return s == null ? null : ToDetailDto(s);
@@ -198,7 +203,9 @@ namespace LogiCore.Server.Services.Shipments
                 ShippingCost          = CalculateShippingCost(dto.ServiceType, dto.TotalWeight, dto.Length, dto.Width, dto.Height),
                 Status                = ShipmentStatus.Pending,
                 CreatedAt             = DateTime.UtcNow,
-                UpdatedAt             = DateTime.UtcNow
+                UpdatedAt             = DateTime.UtcNow,
+                //link to customer if provided (nullable for walk-ins/legacy data):
+                CustomerId = dto.CustomerId,       // ← new
             };
 
             _db.Shipments.Add(shipment);
@@ -252,6 +259,8 @@ namespace LogiCore.Server.Services.Shipments
             s.Notes                 = dto.Notes;
             s.ShippingCost          = CalculateShippingCost(dto.ServiceType, dto.TotalWeight, dto.Length, dto.Width, dto.Height);
             s.UpdatedAt             = DateTime.UtcNow;
+            // UpdateShipmentAsync — allow re-linking:
+            s.CustomerId = dto.CustomerId;         // ← new line after the other property assignments
 
             await _db.SaveChangesAsync();
             return (await GetShipmentByIdAsync(shipmentId))!;
@@ -432,6 +441,11 @@ namespace LogiCore.Server.Services.Shipments
             IsBilled              = s.IsBilled,
             CreatedAt             = s.CreatedAt,
             UpdatedAt             = s.UpdatedAt,
+
+            // ToDetailDto — add to the mapping:
+            CustomerId = s.CustomerId,
+            CustomerName = s.Customer?.FullName,
+            CustomerEmail = s.Customer?.Email,
             Events = s.Events.Select(e => new ShipmentEventDto
             {
                 EventId        = e.EventId,

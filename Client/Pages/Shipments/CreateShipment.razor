@@ -111,6 +111,50 @@ else
                 </RadzenCard>
             </RadzenColumn>
 
+            <!-- Customer Account (optional link) -->
+            <RadzenColumn Size="12">
+                <RadzenCard>
+                    <RadzenText Text="Link to Customer Account (optional)"
+                                TextStyle="TextStyle.Subtitle1" class="rz-mb-3" />
+                    <RadzenRow Gap="0.75rem" AlignItems="AlignItems.End">
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenLabel Text="Search customer by name or email" />
+                            <RadzenAutoComplete @bind-Value="customerSearch"
+                                                Data="@customerSuggestions"
+                                                TextProperty="Label"
+                                                Change="@OnCustomerSearchChange"
+                                                LoadData="@LoadCustomerSuggestions"
+                                                Placeholder="Start typing…"
+                                                Style="width:100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            @if (selectedCustomer != null)
+                            {
+                                <RadzenAlert AlertStyle="AlertStyle.Success" Shade="Shade.Lighter" class="rz-mb-0">
+                                    <b>@selectedCustomer.FullName</b><br />
+                                    <small>@selectedCustomer.Email</small>
+                                    <RadzenButton Icon="close" Size="ButtonSize.ExtraSmall"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Click="@ClearCustomer" class="rz-ml-2" />
+                                </RadzenAlert>
+                            }
+                        </RadzenColumn>
+                    </RadzenRow>
+                    @if (selectedCustomer != null)
+                    {
+                        <!-- Auto-fill prompt -->
+                        <RadzenRow class="rz-mt-2">
+                            <RadzenColumn Size="12">
+                                <RadzenButton Text="Auto-fill sender from account"
+                                              Icon="download" Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Secondary"
+                                              Click="@FillFromCustomer" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    }
+                </RadzenCard>
+            </RadzenColumn>
+
             <!-- Shipment Details -->
             <RadzenColumn Size="12">
                 <RadzenCard>

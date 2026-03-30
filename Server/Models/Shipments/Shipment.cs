@@ -1,4 +1,5 @@
 #nullable enable
+using LogiCore.Server.Models.Customers;
 using System;
 using System.Collections.Generic;
 
@@ -18,6 +19,10 @@ namespace LogiCore.Server.Models.Shipments
         public string RecipientName { get; set; } = string.Empty;
         public string RecipientEmail { get; set; } = string.Empty;
         public string RecipientPhone { get; set; } = string.Empty;
+
+        // Customer link (nullable — legacy/walk-in shipments have no account)
+        public int? CustomerId { get; set; }
+        public Customer? Customer { get; set; }   // nav property
 
         // Addresses
         public string OriginAddress { get; set; } = string.Empty;

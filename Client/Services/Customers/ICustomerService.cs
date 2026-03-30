@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using LogiCore.Server.Models.Customers;
 
 namespace LogiCore.Client.Services.Customers
 {
@@ -14,5 +15,8 @@ namespace LogiCore.Client.Services.Customers
         Task<bool> UpdateStatusAsync(int customerId, CustomerStatus status);
         Task<bool> DeleteCustomerAsync(int customerId);
         Task<CustomerStatsDto> GetStatsAsync();
+
+
+        Task<List<ShipmentListDto>> GetCustomerShipmentsAsync(int customerId);
     }
 }
