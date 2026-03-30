@@ -1,11 +1,13 @@
 #nullable enable
+using LogiCore.Client.Services.Customers;
+using LogiCore.Client.Services.Shipments;
+using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
+using Microsoft.AspNetCore.Components;
+using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components;
-using Radzen;
-using LogiCore.Server.Models.Shipments;
-using LogiCore.Client.Services.Shipments;
 
 namespace LogiCore.Client.Pages.Shipments
 {
@@ -16,6 +18,14 @@ namespace LogiCore.Client.Pages.Shipments
         [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
         [Inject] protected NotificationService NotificationService { get; set; } = default!;
         [Inject] protected IShipmentService ShipmentService { get; set; } = default!;
+
+        // Inject customer service
+        [Inject] protected ICustomerService CustomerService { get; set; } = default!;
+
+        // Customer picker state
+        private string customerSearch = string.Empty;
+        private List<CustomerListDto> customerSuggestions = new();
+        private CustomerDetailDto? selectedCustomer;
 
         private bool IsEditMode => ShipmentId.HasValue;
         private CreateShipmentDto model = new();
@@ -35,8 +45,23 @@ namespace LogiCore.Client.Pages.Shipments
             ("International", ServiceType.International),
         };
 
+        // Add query param
+        [SupplyParameterFromQuery(Name = "customerId")]
+        public int? PreselectedCustomerId { get; set; }
+
         protected override async Task OnParametersSetAsync()
         {
+            // Preselect customer if navigated from CustomerDetail
+            if (!IsEditMode && PreselectedCustomerId.HasValue && selectedCustomer == null)
+            {
+                selectedCustomer = await CustomerService.GetCustomerByIdAsync(PreselectedCustomerId.Value);
+                if (selectedCustomer != null)
+                {
+                    model.CustomerId = selectedCustomer.CustomerId;
+                    customerSearch = selectedCustomer.FullName;
+                }
+            }
+
             if (IsEditMode)
             {
                 isLoading = true;
@@ -158,6 +183,44 @@ namespace LogiCore.Client.Pages.Shipments
                 NavigationManager.NavigateTo($"/shipments/{ShipmentId}");
             else
                 NavigationManager.NavigateTo("/shipments");
+        }
+
+
+        private async Task LoadCustomerSuggestions(LoadDataArgs args)
+        {
+            if (string.IsNullOrWhiteSpace(args.Filter) || args.Filter.Length < 2) return;
+            customerSuggestions = await CustomerService.GetCustomersAsync(
+                new CustomerFilterDto { SearchTerm = args.Filter });
+            StateHasChanged();
+        }
+
+        private async Task OnCustomerSearchChange(object value)
+        {
+            if (value is CustomerListDto dto)
+            {
+                selectedCustomer = await CustomerService.GetCustomerByIdAsync(dto.CustomerId);
+                model.CustomerId = selectedCustomer?.CustomerId;
+            }
+        }
+
+        private void ClearCustomer()
+        {
+            selectedCustomer = null;
+            model.CustomerId = null;
+            customerSearch = string.Empty;
+        }
+
+        private void FillFromCustomer()
+        {
+            if (selectedCustomer == null) return;
+            model.SenderName = selectedCustomer.FullName;
+            model.SenderEmail = selectedCustomer.Email;
+            model.SenderPhone = selectedCustomer.Phone;
+            model.OriginAddress = selectedCustomer.AddressLine1;
+            model.OriginCity = selectedCustomer.City;
+            model.OriginState = selectedCustomer.State;
+            model.OriginPostalCode = selectedCustomer.PostalCode;
+            model.OriginCountry = selectedCustomer.Country;
         }
     }
 }

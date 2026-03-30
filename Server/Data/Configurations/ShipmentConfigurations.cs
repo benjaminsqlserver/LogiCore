@@ -85,6 +85,19 @@ namespace LogiCore.Server.Data.Configurations
             builder.HasIndex(s => s.PickupDate);
             builder.HasIndex(s => s.CreatedAt);
             builder.HasIndex(s => new { s.SenderName, s.RecipientName });
+
+            // LogiCore.Server/Data/Configurations/ShipmentConfiguration.cs
+            // Add inside Configure(), after existing indexes:
+
+            builder.Property(s => s.CustomerId).IsRequired(false);
+
+            builder.HasOne(s => s.Customer)
+                   .WithMany()                          // Customer has no nav collection yet
+                   .HasForeignKey(s => s.CustomerId)
+                   .OnDelete(DeleteBehavior.SetNull)    // deleting a customer nulls the FK, keeps shipment history
+                   .IsRequired(false);
+
+            builder.HasIndex(s => s.CustomerId);
         }
     }
 

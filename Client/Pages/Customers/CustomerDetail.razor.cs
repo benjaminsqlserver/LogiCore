@@ -1,9 +1,10 @@
 #nullable enable
-using System.Threading.Tasks;
+using LogiCore.Client.Services.Customers;
+using LogiCore.Server.Models.Customers;
+using LogiCore.Server.Models.Shipments;
 using Microsoft.AspNetCore.Components;
 using Radzen;
-using LogiCore.Server.Models.Customers;
-using LogiCore.Client.Services.Customers;
+using System.Threading.Tasks;
 
 namespace LogiCore.Client.Pages.Customers
 {
@@ -19,10 +20,20 @@ namespace LogiCore.Client.Pages.Customers
         private CustomerDetailDto? customer;
         private bool isLoading = true;
 
+        // State
+        private List<ShipmentListDto>? shipments;
+
+        // Load alongside customer in OnInitializedAsync:
         protected override async Task OnInitializedAsync()
         {
             isLoading = true;
-            try { customer = await CustomerService.GetCustomerByIdAsync(CustomerId); }
+            try
+            {
+                var tasks = await Task.WhenAll(
+                    CustomerService.GetCustomerByIdAsync(CustomerId).ContinueWith(t => { customer = t.Result; return 0; }),
+                    CustomerService.GetCustomerShipmentsAsync(CustomerId).ContinueWith(t => { shipments = t.Result; return 0; })
+                );
+            }
             finally { isLoading = false; }
         }
 
@@ -63,6 +74,39 @@ namespace LogiCore.Client.Pages.Customers
             AccountType.Individual => BadgeStyle.Info,
             AccountType.Business => BadgeStyle.Primary,
             AccountType.Enterprise => BadgeStyle.Warning,
+            _ => BadgeStyle.Secondary
+        };
+
+        private static BadgeStyle GetStatusBadge(ShipmentStatus s) => s switch
+        {
+            ShipmentStatus.Pending => BadgeStyle.Warning,
+            ShipmentStatus.PickedUp => BadgeStyle.Info,
+            ShipmentStatus.InTransit => BadgeStyle.Primary,
+            ShipmentStatus.AtHub => BadgeStyle.Primary,
+            ShipmentStatus.OutForDelivery => BadgeStyle.Info,
+            ShipmentStatus.Delivered => BadgeStyle.Success,
+            ShipmentStatus.Failed => BadgeStyle.Danger,
+            ShipmentStatus.Cancelled => BadgeStyle.Light,
+            _ => BadgeStyle.Secondary
+        };
+        private static string GetStatusLabel(ShipmentStatus s) => s switch
+        {
+            ShipmentStatus.PickupScheduled => "Pickup Scheduled",
+            ShipmentStatus.PickedUp => "Picked Up",
+            ShipmentStatus.InTransit => "In Transit",
+            ShipmentStatus.AtHub => "At Hub",
+            ShipmentStatus.OutForDelivery => "Out for Delivery",
+            ShipmentStatus.ReturnInitiated => "Return Initiated",
+            _ => s.ToString()
+        };
+        private static BadgeStyle GetServiceBadge(ServiceType s) => s switch
+        {
+            ServiceType.SameDay => BadgeStyle.Danger,
+            ServiceType.Overnight => BadgeStyle.Warning,
+            ServiceType.TwoDay => BadgeStyle.Info,
+            ServiceType.Ground => BadgeStyle.Secondary,
+            ServiceType.Freight => BadgeStyle.Light,
+            ServiceType.International => BadgeStyle.Primary,
             _ => BadgeStyle.Secondary
         };
     }
